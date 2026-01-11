@@ -1,0 +1,37 @@
+name: Deploy static site (inject env)
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    # If you used a specific Environment in settings, set it here (optional). Change 'production' if different.
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate SUPABASE secrets
+        run: |
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_KEY }}" ]; then
+            echo "ERROR: SUPABASE_URL and SUPABASE_KEY must be configured in repository environment secrets.";
+            exit 1;
+          fi
+
+      - name: Generate env.js
+        run: |
+          cat > env.js <<'EOF'
+          // Injected by GitHub Actions during deploy. Do not commit secrets to the repo.
+          window.SUPABASE_URL = "${{ secrets.SUPABASE_URL }}";
+          window.SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}";
+          if (!window.SUPABASE_URL || !window.SUPABASE_KEY) console.warn('Missing SUPABASE env values');
+          EOF
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./

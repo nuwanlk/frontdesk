@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weligama DS Office Feedback</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- env.js is generated at deploy time (CI) and exposes window.SUPABASE_URL and window.SUPABASE_KEY -->
+    <script src="/env.js"></script>
     <style>
         * { box-sizing: border-box; }
         
@@ -152,8 +154,9 @@
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://uuhyruaxjaqkqgcjqbkc.supabase.co'; 
-    const SUPABASE_KEY = 'sb_publishable_WJuQiaPsagjB19Qg6d3r7Q_wFHHG66R';
+    // Supabase config is injected at deploy/runtime via /env.js (do NOT hardcode keys in repo)
+    const SUPABASE_URL = window.SUPABASE_URL || '';
+    const SUPABASE_KEY = window.SUPABASE_KEY || '';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let feedbackData = { satisfied: '', branch: '', phone: '' };
