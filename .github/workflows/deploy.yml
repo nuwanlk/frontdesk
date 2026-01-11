@@ -7,8 +7,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-  # Use the 'github-pages' environment so this deploy reads secrets from that environment
-  environment: github-pages
+    # Use the 'github-pages' environment so this deploy reads secrets from that environment
+    environment: github-pages
 
     steps:
       - name: Checkout repository
@@ -29,6 +29,12 @@ jobs:
           window.SUPABASE_KEY = "${{ secrets.SUPABASE_KEY }}";
           if (!window.SUPABASE_URL || !window.SUPABASE_KEY) console.warn('Missing SUPABASE env values');
           EOF
+
+      - name: Verify env.js was created
+        run: |
+          if [ ! -f env.js ]; then echo "ERROR: env.js not found"; exit 1; fi
+          echo "env.js size: $(wc -c < env.js) bytes"
+          sha256sum env.js | awk '{print "env.js sha256:", $1}'
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
