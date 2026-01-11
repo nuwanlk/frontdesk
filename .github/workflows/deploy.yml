@@ -7,8 +7,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    # If you used a specific Environment in settings, set it here (optional). Change 'production' if different.
-    environment: production
+  # Use the 'github-pages' environment so this deploy reads secrets from that environment
+  environment: github-pages
 
     steps:
       - name: Checkout repository
