@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weligama DS Office - Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- env.js is generated at deploy time (CI) and exposes window.SUPABASE_URL and window.SUPABASE_KEY -->
+    <script src="/env.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        
+        header { 
+            background: #2c3e50; color: white; padding: 25px; text-align: center; 
+            border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        }
+        
+        .btn-back { 
+            display: inline-block; margin-top: 15px; padding: 10px 25px; 
+            background: #3498db; color: white; text-decoration: none; 
+            border-radius: 8px; font-weight: bold; transition: 0.2s; 
+        }
+        .btn-back:hover { background: #2980b9; }
+
+        /* Tabs Navigation */
+        .tab-container { 
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; 
+            background: white; padding: 10px; border-radius: 50px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        }
+        .tab-btn { 
+            padding: 12px 25px; border: none; background: none; cursor: pointer; 
+            font-size: 1rem; font-weight: 600; color: #7f8c8d; border-radius: 50px; transition: 0.3s; 
+        }
+        .tab-btn.active { background: #2c3e50; color: white; }
+
+        /* Chart Grid: 1fr 2fr ratio for alignment */
+        .grid { 
+            display: grid; grid-template-columns: 1fr 2fr; gap: 20px; 
+            margin-bottom: 25px; align-items: stretch; 
+        }
+
+        .card { 
+            background: white; padding: 20px; border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; 
+        }
+
+        .chart-container { 
+            position: relative; flex: 1; max-height: 320px; margin: auto; width: 100%; 
+        }
+
+        h2 { font-size: 1.3rem; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; }
+
+        /* Analysis Table */
+        .analysis-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .analysis-table th { background: #f8f9fa; color: #7f8c8d; font-size: 0.85rem; padding: 15px; text-align: left; }
+        .analysis-table td { padding: 15px; border-bottom: 1px solid #eee; font-size: 1rem; }
+        
+        .badge { padding: 6px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; }
+        .badge-green { background: #e8f5e9; color: #2e7d32; }
+        .badge-red { background: #ffebee; color: #c62828; }
+        
+        .progress-bg { background: #eee; height: 10px; border-radius: 5px; width: 100px; display: inline-block; margin-right: 10px; }
+        .progress-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .chart-container { max-height: 400px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>සේවා තෘප්තිමත්භාවය පිළිබඳ දත්ත විශ්ලේෂණය</h1>
+    <p>ප්‍රාදේශීය ලේකම් කාර්යාලය - වැලිගම</p>
+    <a href="index.html" class="btn-back">යෙදුම වෙත ආපසු (Back to App)</a>
+</header>
+
+<div class="tab-container">
+    <button class="tab-btn active" onclick="changeFilter('all', this)">All Time</button>
+    <button class="tab-btn" onclick="changeFilter('daily', this)">Daily</button>
+    <button class="tab-btn" onclick="changeFilter('weekly', this)">Weekly</button>
+    <button class="tab-btn" onclick="changeFilter('monthly', this)">Monthly</button>
+    <button class="tab-btn" onclick="changeFilter('quarterly', this)">Quarterly</button>
+    <button class="tab-btn" onclick="changeFilter('yearly', this)">Yearly</button>
+</div>
+
+
+
+<div class="grid">
+    <div class="card">
+        <h2>සමස්ත තෘප්තිමත්භාවය</h2>
+        <div class="chart-container">
+            <canvas id="satisfactionChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>අංශ අනුව ප්‍රතිචාර</h2>
+        <div class="chart-container" style="max-height: none;">
+            <canvas id="branchVolumeChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 id="table-title">අංශ අනුව සේවා සාර්ථකත්වය (All Time)</h2>
+    <table class="analysis-table">
+        <thead>
+            <tr>
+                <th>අංශය</th>
+                <th>මුළු ප්‍රතිචාර</th>
+                <th>තෘප්තිමත් (ඔව්)</th>
+                <th>අතෘප්තිමත් (නැත)</th>
+                <th>සාර්ථකත්ව ප්‍රතිශතය</th>
+            </tr>
+        </thead>
+        <tbody id="analysis-body">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // --- SUPABASE CONFIGURATION ---
+    // Injected at runtime by /env.js (generated during CI/deploy). Do NOT hardcode keys.
+    const SUPABASE_URL = window.SUPABASE_URL || '';
+    const SUPABASE_KEY = window.SUPABASE_KEY || '';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allData = [];
+    let satChart, volChart;
+
+    async function init() {
+        const { data, error } = await supabaseClient.from('office_feedback').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error('Supabase Error:', error);
+            return;
+        }
+        allData = data;
+        updateDashboard('all');
+    }
+
+    function changeFilter(type, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateDashboard(type);
+    }
+
+    function updateDashboard(filterType) {
+        const now = new Date();
+        const filtered = allData.filter(item => {
+            const itemDate = new Date(item.created_at);
+            if (filterType === 'daily') return itemDate.toDateString() === now.toDateString();
+            if (filterType === 'weekly') {
+                const weekAgo = new Date();
+                weekAgo.setDate(now.getDate() - 7);
+                return itemDate >= weekAgo;
+            }
+            if (filterType === 'monthly') return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+            if (filterType === 'quarterly') {
+                const currentQuarter = Math.floor(now.getMonth() / 3);
+                const itemQuarter = Math.floor(itemDate.getMonth() / 3);
+                return currentQuarter === itemQuarter && itemDate.getFullYear() === now.getFullYear();
+            }
+            if (filterType === 'yearly') return itemDate.getFullYear() === now.getFullYear();
+            return true; // All Time
+        });
+
+        document.getElementById('table-title').innerText = `අංශ අනුව සේවා සාර්ථකත්වය (${filterType.toUpperCase()})`;
+        processStats(filtered);
+    }
+
+    function processStats(data) {
+        const stats = {};
+        let yesTotal = 0, noTotal = 0;
+
+        data.forEach(item => {
+            if (!stats[item.branch]) stats[item.branch] = { total: 0, yes: 0, no: 0 };
+            stats[item.branch].total++;
+            if (item.satisfied === 'ඔව්') { stats[item.branch].yes++; yesTotal++; }
+            else { stats[item.branch].no++; noTotal++; }
+        });
+
+        renderCharts(yesTotal, noTotal, stats);
+        renderTable(stats);
+    }
+
+    function renderTable(stats) {
+        const tbody = document.getElementById('analysis-body');
+        tbody.innerHTML = '';
+        
+        // Sort by total responses descending
+        Object.entries(stats).sort((a,b) => b[1].total - a[1].total).forEach(([name, d]) => {
+            const perc = Math.round((d.yes / d.total) * 100) || 0;
+            const color = perc > 70 ? '#2ecc71' : (perc > 40 ? '#f1c40f' : '#e74c3c');
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td>${d.total}</td>
+                    <td><span class="badge badge-green">${d.yes}</span></td>
+                    <td><span class="badge badge-red">${d.no}</span></td>
+                    <td>
+                        <div class="progress-bg"><div class="progress-fill" style="width:${perc}%; background:${color}"></div></div>
+                        <strong>${perc}%</strong>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    function renderCharts(yes, no, stats) {
+        if (satChart) satChart.destroy();
+        if (volChart) volChart.destroy();
+
+        // Satisfaction Doughnut
+        satChart = new Chart(document.getElementById('satisfactionChart'), {
+            type: 'doughnut',
+            data: { 
+                labels: ['තෘප්තිමත් (ඔව්)', 'අතෘප්තිමත් (නැත)'], 
+                datasets: [{ 
+                    data: [yes, no], 
+                    backgroundColor: ['#2ecc71', '#e74c3c'],
+                    hoverOffset: 10,
+                    borderWidth: 0
+                }] 
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                cutout: '70%'
+            }
+        });
+
+        // Stacked Horizontal Bar Chart for Branch Responses
+        const branches = Object.keys(stats);
+        const yesData = branches.map(b => stats[b].yes);
+        const noData = branches.map(b => stats[b].no);
+
+        volChart = new Chart(document.getElementById('branchVolumeChart'), {
+            type: 'bar',
+            data: {
+                labels: branches,
+                datasets: [
+                    { label: 'තෘප්තිමත් (ඔව්)', data: yesData, backgroundColor: '#2ecc71', borderRadius: 5 },
+                    { label: 'අතෘප්තිමත් (නැත)', data: noData, backgroundColor: '#e74c3c', borderRadius: 5 }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                maintainAspectRatio: false,
+                responsive: true,
+                scales: {
+                    x: { stacked: true, beginAtZero: true, grid: { display: false } },
+                    y: { stacked: true, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
