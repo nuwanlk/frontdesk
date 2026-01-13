@@ -35,12 +35,11 @@ jobs:
           echo "env.js size: $(wc -c < env.js) bytes"
           sha256sum env.js | awk '{print "env.js sha256:", $1}'
 
-      - name: List workspace before deploy
+      - name: List files in publish_dir before deploy
         run: |
-          echo "Workspace files:";
-          ls -la
-          echo "--- root files ---";
-          ls -la . | sed -n '1,200p'
+          echo "Files in publish_dir (./):"
+          find . -maxdepth 1 -type f | xargs ls -l
+          echo "Files in repo root:"; ls -la .
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
