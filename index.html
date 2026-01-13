@@ -93,6 +93,39 @@
             .btn-branch, .btn-officer { font-size: 1.5rem; padding: 15px; }
             button { font-size: 2rem; }
         }
+
+        /* Mobile responsiveness */
+        @media (max-width: 700px) {
+            .office-name { font-size: 1.5rem; padding: 10px 0; }
+            header { padding: 15px 0; }
+            .question { font-size: 1.5rem; margin-bottom: 1rem; }
+            .btn-container { flex-direction: column; gap: 20px; }
+            .btn-yes, .btn-no, .btn-branch, .btn-officer, .btn-submit {
+                min-width: unset;
+                width: 100%;
+                font-size: 1.2rem;
+                padding: 15px;
+            }
+            .branch-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                max-width: 100vw;
+            }
+            input[type="text"] {
+                font-size: 1.5rem;
+                padding: 10px;
+                width: 95%;
+                max-width: 100vw;
+            }
+            .btn-back {
+                font-size: 1rem;
+                padding: 10px 15px;
+                width: 100%;
+            }
+            #main-wrapper {
+                padding: 5px;
+            }
+        }
     </style>
 </head>
 <body>

@@ -68,6 +68,20 @@
             .grid { grid-template-columns: 1fr; }
             .chart-container { max-height: 400px; }
         }
+
+        /* Extra mobile responsiveness */
+        @media (max-width: 700px) {
+            header { padding: 10px; font-size: 1rem; }
+            h1 { font-size: 1.1rem; }
+            .tab-container { flex-direction: column; gap: 5px; padding: 5px; }
+            .tab-btn { font-size: 0.9rem; padding: 8px 10px; }
+            .grid { gap: 10px; }
+            .card { padding: 8px; border-radius: 8px; }
+            .chart-container { max-height: 220px; }
+            .analysis-table th, .analysis-table td { padding: 7px; font-size: 0.8rem; }
+            .badge { font-size: 0.7rem; padding: 3px 6px; }
+            .progress-bg { width: 60px; }
+        }
     </style>
 </head>
 <body>
