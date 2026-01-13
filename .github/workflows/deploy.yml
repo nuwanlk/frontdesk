@@ -20,8 +20,10 @@ jobs:
             exit 1;
           fi
 
-      - name: Generate env.js
+      - name: Generate env.js in repo root
         run: |
+          echo "Creating env.js in repo root: $PWD"
+          ls -l index.html || echo "index.html not found in $PWD"
           cat > env.js <<'EOF'
           // Injected by GitHub Actions during deploy. Do not commit secrets to the repo.
           window.SUPABASE_URL = "${{ secrets.SUPABASE_URL }}";
@@ -35,11 +37,10 @@ jobs:
           echo "env.js size: $(wc -c < env.js) bytes"
           sha256sum env.js | awk '{print "env.js sha256:", $1}'
 
-      - name: List files in publish_dir before deploy
+      - name: List files in repo root before deploy
         run: |
-          echo "Files in publish_dir (./):"
-          find . -maxdepth 1 -type f | xargs ls -l
-          echo "Files in repo root:"; ls -la .
+          echo "Files in repo root (should see index.html and env.js):"
+          ls -l .
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
