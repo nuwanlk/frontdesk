@@ -130,6 +130,7 @@
                 <th>මුළු ප්‍රතිචාර</th>
                 <th>තෘප්තිමත් (ඔව්)</th>
                 <th>අතෘප්තිමත් (නැත)</th>
+                <th>දුරකථන අංක</th>
                 <th>සාර්ථකත්ව ප්‍රතිශතය</th>
             </tr>
         </thead>
@@ -193,10 +194,15 @@
         let yesTotal = 0, noTotal = 0;
 
         data.forEach(item => {
-            if (!stats[item.branch]) stats[item.branch] = { total: 0, yes: 0, no: 0 };
+            if (!stats[item.branch]) stats[item.branch] = { total: 0, yes: 0, no: 0, phones: [] };
             stats[item.branch].total++;
             if (item.satisfied === 'ඔව්') { stats[item.branch].yes++; yesTotal++; }
             else { stats[item.branch].no++; noTotal++; }
+            if (item.phone && item.phone !== 'N/A') {
+                if (!stats[item.branch].phones.includes(item.phone)) {
+                    stats[item.branch].phones.push(item.phone);
+                }
+            }
         });
 
         renderCharts(yesTotal, noTotal, stats);
@@ -211,6 +217,7 @@
         Object.entries(stats).sort((a,b) => b[1].total - a[1].total).forEach(([name, d]) => {
             const perc = Math.round((d.yes / d.total) * 100) || 0;
             const color = perc > 70 ? '#2ecc71' : (perc > 40 ? '#f1c40f' : '#e74c3c');
+            const phoneList = d.phones.length > 0 ? d.phones.map(p => `<span style="font-family: monospace; background: #eaedf1; padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; margin-right: 4px; display: inline-block; font-weight: bold; color: #2c3e50;">${p}</span>`).join('') : '<span style="color: #999;">-</span>';
             
             tbody.innerHTML += `
                 <tr>
@@ -218,6 +225,7 @@
                     <td>${d.total}</td>
                     <td><span class="badge badge-green">${d.yes}</span></td>
                     <td><span class="badge badge-red">${d.no}</span></td>
+                    <td>${phoneList}</td>
                     <td>
                         <div class="progress-bg"><div class="progress-fill" style="width:${perc}%; background:${color}"></div></div>
                         <strong>${perc}%</strong>
