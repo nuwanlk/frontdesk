@@ -8,12 +8,16 @@
     <!-- env.js is generated at deploy time (CI) and exposes window.SUPABASE_URL and window.SUPABASE_KEY -->
     <!-- Use a relative path so project pages (username.github.io/repo) load env.js correctly -->
     <script src="env.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         
+        body, html, button, input {
+            font-family: 'Abhaya Libre', 'Segoe UI', Arial, sans-serif;
+        }
+
         body, html {
             height: 100%; margin: 0; padding: 0; overflow: hidden;
-            font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #f0f2f5; display: flex; flex-direction: column;
         }
 
@@ -23,6 +27,7 @@
         }
 
         .office-name { font-size: 4rem; font-weight: bold; margin: 0; cursor: pointer; }
+        .current-date { font-size: 1.8rem; margin-top: 10px; color: #ecf0f1; opacity: 0.9; }
         a { text-decoration: none; color: inherit; }
 
         #main-wrapper {
@@ -126,12 +131,68 @@
                 padding: 5px;
             }
         }
+
+        /* Keypad Styles */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 30px;
+        }
+
+        .key-btn {
+            padding: 20px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            background-color: white;
+            color: #2c3e50;
+            border: 3px solid #2c3e50;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .key-btn:active {
+            background-color: #2c3e50;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .key-btn.special {
+            background-color: #ecf0f1;
+            font-size: 1.5rem;
+        }
+
+        .key-btn.delete {
+            color: #ff3d00;
+            border-color: #ff3d00;
+        }
+
+        @media (max-width: 700px) {
+            .keypad {
+                gap: 10px;
+                max-width: 100%;
+            }
+            .key-btn {
+                padding: 15px;
+                font-size: 1.8rem;
+            }
+            .key-btn.special {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
 
 <header>
     <a href="dashboard.html"><div class="office-name">ප්‍රාදේශීය ලේකම් කාර්යාලය - වැලිගම</div></a>
+    <div id="current-date" class="current-date"></div>
 </header>
 
 <div id="main-wrapper">
@@ -171,7 +232,23 @@
 
     <div id="step-3" class="step hidden">
         <div class="question">ඔබේ දුරකථන අංකය ඇතුළත් කරන්න</div>
-        <input type="text" id="phone-input" placeholder="07XXXXXXXX" inputmode="numeric">
+        <input type="text" id="phone-input" placeholder="07XXXXXXXX" inputmode="none" readonly>
+        
+        <div class="keypad">
+            <button class="key-btn" onclick="keypadPress('1')">1</button>
+            <button class="key-btn" onclick="keypadPress('2')">2</button>
+            <button class="key-btn" onclick="keypadPress('3')">3</button>
+            <button class="key-btn" onclick="keypadPress('4')">4</button>
+            <button class="key-btn" onclick="keypadPress('5')">5</button>
+            <button class="key-btn" onclick="keypadPress('6')">6</button>
+            <button class="key-btn" onclick="keypadPress('7')">7</button>
+            <button class="key-btn" onclick="keypadPress('8')">8</button>
+            <button class="key-btn" onclick="keypadPress('9')">9</button>
+            <button class="key-btn special" onclick="keypadClear()">Clear</button>
+            <button class="key-btn" onclick="keypadPress('0')">0</button>
+            <button class="key-btn special delete" onclick="keypadDelete()">Del</button>
+        </div>
+
         <button class="btn-submit" id="submit-btn" onclick="finalSubmit()">ඇතුළත් කරන්න</button>
         <button class="btn-back" onclick="showStep('step-2')">ආපසු</button>
     </div>
@@ -192,6 +269,40 @@
     const SUPABASE_URL = "https://uuhyruaxjaqkqgcjqbkc.supabase.co";
     const SUPABASE_KEY = "sb_publishable_WJuQiaPsagjB19Qg6d3r7Q_wFHHG66R";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function updateSinhalaDate() {
+        const months = [
+            "ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජුනි",
+            "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"
+        ];
+        
+        const now = new Date("2026-03-13T09:06:04+05:30"); // Using current system time from metadata
+        const year = now.getFullYear();
+        const month = months[now.getMonth()];
+        const day = now.getDate();
+        
+        const sinhalaDate = `අද දිනය ${year} ${month} මස ${day} වැනිදා`;
+        document.getElementById('current-date').innerText = sinhalaDate;
+    }
+
+    updateSinhalaDate();
+
+    // Keypad Logic
+    function keypadPress(digit) {
+        const input = document.getElementById('phone-input');
+        if (input.value.length < 10) {
+            input.value += digit;
+        }
+    }
+
+    function keypadDelete() {
+        const input = document.getElementById('phone-input');
+        input.value = input.value.slice(0, -1);
+    }
+
+    function keypadClear() {
+        document.getElementById('phone-input').value = '';
+    }
 
     let feedbackData = { satisfied: '', branch: '', phone: '' };
 
